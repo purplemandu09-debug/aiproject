@@ -1,3 +1,12 @@
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SEA_FILE = BASE_DIR / "sea.csv"
+SEA02_FILE = BASE_DIR / "sea02.csv"
+
+print("sea.csv 존재:", SEA_FILE.exists())
+print("sea02.csv 존재:", SEA02_FILE.exists())
 import streamlit as st
 import pandas as pd
 import folium
