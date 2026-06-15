@@ -210,7 +210,7 @@ with left:
         .reset_index(name="발생건수")
     )
 
-    fig = px.line(
+    fig =(
         monthly,
         x="월",
         y="발생건수",
@@ -238,7 +238,7 @@ with right:
         "발생건수"
     ]
 
-    fig2 = px.bar(
+    fig2 =(
         top_region,
         x="발생건수",
         y="지역",
@@ -313,8 +313,8 @@ species_df = pd.DataFrame({
     "출현횟수": species_count
 })
 
-fig3 = px.bar(
-    species_df,
+fig3 =( 
+   species_df,
     x="종류",
     y="출현횟수"
 )
