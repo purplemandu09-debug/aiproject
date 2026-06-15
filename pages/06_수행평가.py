@@ -26,11 +26,10 @@ st.set_page_config(
 @st.cache_data
 def load_observation():
 
-    try:
-        df = pd.read_csv("sea.csv", encoding="cp949")
-    except:
-        df = pd.read_csv("sea.csv", encoding="euc-kr")
-
+   try:
+    news = pd.read_csv(SEA02_FILE, encoding="cp949")
+except:
+    news = pd.read_csv(SEA02_FILE, encoding="euc-kr")
     df["보고일자"] = pd.to_datetime(
         df["보고일자"],
         errors="coerce"
@@ -210,17 +209,9 @@ with left:
         .reset_index(name="발생건수")
     )
 
-    fig =(
-        monthly,
-        x="월",
-        y="발생건수",
-        markers=True
-    )
+   monthly = monthly.set_index("월")
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
+st.line_chart(monthly["발생건수"])
 
 with right:
 
@@ -238,17 +229,9 @@ with right:
         "발생건수"
     ]
 
-    fig2 =(
-        top_region,
-        x="발생건수",
-        y="지역",
-        orientation="h"
-    )
-
-    st.plotly_chart(
-        fig2,
-        use_container_width=True
-    )
+    st.bar_chart(
+    top_region.set_index("지역")
+)
 
 st.divider()
 
@@ -313,16 +296,10 @@ species_df = pd.DataFrame({
     "출현횟수": species_count
 })
 
-fig3 =( 
-   species_df,
-    x="종류",
-    y="출현횟수"
+st.bar_chart(
+    species_df.set_index("종류")
 )
 
-st.plotly_chart(
-    fig3,
-    use_container_width=True
-)
 
 st.divider()
 
