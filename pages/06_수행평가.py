@@ -6,9 +6,9 @@ import pandas as pd
 import folium
 from streamlit_folium import st_folium
 
-# ==========================
+# ====================================
 # 기본 설정
-# ==========================
+# ====================================
 
 st.set_page_config(
     page_title="전국 해파리 발생·예보 통합 시스템",
@@ -21,9 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SEA_FILE = BASE_DIR / "sea.csv"
 SEA02_FILE = BASE_DIR / "sea02.csv"
 
-# ==========================
-# 데이터 로드
-# ==========================
+# ====================================
+# 관측 데이터
+# ====================================
 
 @st.cache_data
 def load_observation():
@@ -41,12 +41,12 @@ def load_observation():
     df["연도"] = df["보고일자"].dt.year
     df["월"] = df["보고일자"].dt.month
 
-    df = df.dropna(
-        subset=["위도", "경도"]
-    )
-
     return df
 
+
+# ====================================
+# 뉴스 데이터
+# ====================================
 
 @st.cache_data
 def load_news():
@@ -56,64 +56,61 @@ def load_news():
             SEA02_FILE,
             sep="\t",
             header=None,
-            encoding="cp949"
+            names=["날짜", "내용"],
+            encoding="cp949",
+            engine="python"
         )
+
     except:
+
         news = pd.read_csv(
             SEA02_FILE,
             sep="\t",
             header=None,
-            encoding="euc-kr"
+            names=["날짜", "내용"],
+            encoding="euc-kr",
+            engine="python"
         )
 
-    if len(news.columns) >= 2:
-        news.columns = ["날짜", "내용"]
+    news["내용"] = news["내용"].astype(str)
 
     return news
 
 
-# ==========================
-# 파일 존재 확인
-# ==========================
+# ====================================
+# 파일 체크
+# ====================================
 
 if not SEA_FILE.exists():
-    st.error(f"sea.csv 파일이 없습니다.\n{SEA_FILE}")
+    st.error(f"sea.csv 없음\n{SEA_FILE}")
     st.stop()
 
 if not SEA02_FILE.exists():
-    st.error(f"sea02.csv 파일이 없습니다.\n{SEA02_FILE}")
+    st.error(f"sea02.csv 없음\n{SEA02_FILE}")
     st.stop()
 
 obs = load_observation()
 news = load_news()
 
-# ==========================
+# ====================================
 # 제목
-# ==========================
+# ====================================
 
 st.title("🪼 전국 해파리 발생·예보 통합 시스템")
-st.caption("관측 데이터 + 예보 뉴스 데이터 통합")
+st.caption("관측 데이터 + 예보 뉴스 데이터")
 
-# ==========================
+# ====================================
 # 사이드바
-# ==========================
-
-st.sidebar.header("검색 옵션")
+# ====================================
 
 years = sorted(
-    obs["연도"]
-    .dropna()
-    .unique()
+    obs["연도"].dropna().unique()
 )
 
 selected_year = st.sidebar.selectbox(
     "연도 선택",
     ["전체"] + list(years)
 )
-
-# ==========================
-# 필터
-# ==========================
 
 filtered = obs.copy()
 
@@ -122,23 +119,23 @@ if selected_year != "전체":
         filtered["연도"] == selected_year
     ]
 
-# ==========================
+# ====================================
 # KPI
-# ==========================
+# ====================================
 
 st.subheader("📊 현황 요약")
 
 c1, c2, c3 = st.columns(3)
 
 c1.metric("관측 건수", len(filtered))
-c2.metric("관측 지역 수", filtered["지역"].nunique())
+c2.metric("관측 지역", filtered["지역"].nunique())
 c3.metric("뉴스 건수", len(news))
 
 st.divider()
 
-# ==========================
+# ====================================
 # 지도
-# ==========================
+# ====================================
 
 st.subheader("🗺️ 해파리 발생 지도")
 
@@ -156,11 +153,6 @@ if len(filtered) > 0:
 
     for _, row in sample.iterrows():
 
-        popup = f"""
-        지역 : {row['지역']}<br>
-        날짜 : {row['보고일자']}<br>
-        """
-
         folium.CircleMarker(
             location=[
                 row["위도"],
@@ -169,8 +161,7 @@ if len(filtered) > 0:
             radius=4,
             color="blue",
             fill=True,
-            fill_color="blue",
-            popup=popup
+            fill_color="blue"
         ).add_to(m)
 
     st_folium(
@@ -181,9 +172,9 @@ if len(filtered) > 0:
 
 st.divider()
 
-# ==========================
-# 월별 발생 현황
-# ==========================
+# ====================================
+# 월별 발생
+# ====================================
 
 st.subheader("📈 월별 발생 현황")
 
@@ -193,19 +184,17 @@ monthly = (
     .reset_index(name="발생건수")
 )
 
-if len(monthly) > 0:
-
-    monthly = monthly.set_index("월")
+if len(monthly):
 
     st.line_chart(
-        monthly["발생건수"]
+        monthly.set_index("월")
     )
 
 st.divider()
 
-# ==========================
-# 발생 지역 TOP10
-# ==========================
+# ====================================
+# TOP10
+# ====================================
 
 st.subheader("🏖️ 발생 지역 TOP10")
 
@@ -219,19 +208,21 @@ st.bar_chart(top_region)
 
 st.divider()
 
-# ==========================
-# 위험도 분석
-# ==========================
+# ====================================
+# 위험도
+# ====================================
 
 st.subheader("🚨 전국 위험도")
 
 news_text = "\n".join(
-    news.iloc[:, -1].astype(str)
+    news["내용"]
 )
 
 danger = (
     news_text.count("주의경보")
-    + news_text.count("대량발생")
+    + news_text.count("주의보")
+    + news_text.count("대량출현")
+    + news_text.count("대량 발생")
     + news_text.count("쏘임사고")
 )
 
@@ -248,33 +239,28 @@ st.metric(
 )
 
 st.write(
-    f"위험 키워드 발견 수 : {danger}"
+    f"위험 키워드 수 : {danger}"
 )
 
 st.divider()
 
-# ==========================
-# 해파리 종류 분석
-# ==========================
+# ====================================
+# 해파리 종 분석
+# ====================================
 
 species = [
     "노무라입깃해파리",
     "보름달물해파리",
-    "두빛보름달해파리",
     "작은상자해파리",
     "유령해파리"
 ]
 
-count_list = []
-
-for s in species:
-    count_list.append(
-        news_text.count(s)
-    )
-
 species_df = pd.DataFrame({
     "종류": species,
-    "출현횟수": count_list
+    "출현횟수": [
+        news_text.count(x)
+        for x in species
+    ]
 })
 
 st.subheader("🪼 주요 해파리 출현")
@@ -285,9 +271,9 @@ st.bar_chart(
 
 st.divider()
 
-# ==========================
+# ====================================
 # 뉴스 검색
-# ==========================
+# ====================================
 
 st.subheader("🔍 뉴스 검색")
 
@@ -298,8 +284,7 @@ keyword = st.text_input(
 if keyword:
 
     result = news[
-        news.iloc[:, -1]
-        .astype(str)
+        news["내용"]
         .str.contains(
             keyword,
             case=False,
@@ -318,24 +303,27 @@ if keyword:
 
 st.divider()
 
-# ==========================
+# ====================================
 # 최근 뉴스
-# ==========================
+# ====================================
 
 st.subheader("📰 최근 뉴스")
 
-for i in range(min(10, len(news))):
+for i in range(
+    min(10, len(news))
+):
 
     with st.expander(
-        f"뉴스 {i+1}"
+        f"{news.iloc[i]['날짜']}"
     ):
+
         st.write(
-            news.iloc[i, -1]
+            news.iloc[i]["내용"]
         )
 
-# ==========================
+# ====================================
 # 원본 데이터
-# ==========================
+# ====================================
 
 with st.expander("📂 관측 데이터"):
     st.dataframe(
