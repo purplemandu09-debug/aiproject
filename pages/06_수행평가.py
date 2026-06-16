@@ -288,7 +288,7 @@ st.divider()
 # 뉴스 검색
 # ====================================
 
-if keyword:
+if keyword:st.text_input(...)
 
     result = news[
         news["내용"]
