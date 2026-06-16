@@ -41,6 +41,10 @@ def load_observation():
     df["연도"] = df["보고일자"].dt.year
     df["월"] = df["보고일자"].dt.month
 
+    df = df.dropna(
+        subset=["위도", "경도"]
+    )
+
     return df
 
 
@@ -50,13 +54,20 @@ def load_news():
     try:
         news = pd.read_csv(
             SEA02_FILE,
+            sep="\t",
+            header=None,
             encoding="cp949"
         )
     except:
         news = pd.read_csv(
             SEA02_FILE,
+            sep="\t",
+            header=None,
             encoding="euc-kr"
         )
+
+    if len(news.columns) >= 2:
+        news.columns = ["날짜", "내용"]
 
     return news
 
@@ -119,20 +130,9 @@ st.subheader("📊 현황 요약")
 
 c1, c2, c3 = st.columns(3)
 
-c1.metric(
-    "관측 건수",
-    len(filtered)
-)
-
-c2.metric(
-    "관측 지역 수",
-    filtered["지역"].nunique()
-)
-
-c3.metric(
-    "뉴스 건수",
-    len(news)
-)
+c1.metric("관측 건수", len(filtered))
+c2.metric("관측 지역 수", filtered["지역"].nunique())
+c3.metric("뉴스 건수", len(news))
 
 st.divider()
 
@@ -226,7 +226,7 @@ st.divider()
 st.subheader("🚨 전국 위험도")
 
 news_text = "\n".join(
-    news.iloc[:, 1].astype(str)
+    news.iloc[:, -1].astype(str)
 )
 
 danger = (
@@ -262,7 +262,7 @@ species = [
     "보름달물해파리",
     "두빛보름달해파리",
     "작은상자해파리",
-    "유령해파리",
+    "유령해파리"
 ]
 
 count_list = []
@@ -298,7 +298,7 @@ keyword = st.text_input(
 if keyword:
 
     result = news[
-        news.iloc[:, 1]
+        news.iloc[:, -1]
         .astype(str)
         .str.contains(
             keyword,
@@ -330,7 +330,7 @@ for i in range(min(10, len(news))):
         f"뉴스 {i+1}"
     ):
         st.write(
-            news.iloc[i, 1]
+            news.iloc[i, -1]
         )
 
 # ==========================
@@ -348,4 +348,3 @@ with st.expander("📂 뉴스 데이터"):
         news,
         use_container_width=True
     )
-
