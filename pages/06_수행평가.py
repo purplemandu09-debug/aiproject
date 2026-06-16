@@ -53,9 +53,7 @@ def load_news():
 
     rows = []
 
-    encodings = ["cp949", "euc-kr", "utf-8"]
-
-    for enc in encodings:
+    for enc in ["cp949", "euc-kr", "utf-8"]:
 
         try:
 
@@ -69,7 +67,7 @@ def load_news():
 
                     line = line.strip()
 
-         if not line:
+                    if not line:
                         continue
 
                     parts = line.split("\t", 1)
@@ -85,7 +83,8 @@ def load_news():
 
                         rows.append({
                             "날짜": "",
-                            "내용": line })
+                            "내용": line
+                        })
 
             break
 
