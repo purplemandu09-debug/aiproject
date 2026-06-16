@@ -93,10 +93,16 @@ def load_news():
 
     news = pd.DataFrame(rows)
 
+    if len(news) == 0:
+        news = pd.DataFrame(
+            columns=["날짜", "내용"]
+        )
+
     news["날짜"] = news["날짜"].astype(str)
     news["내용"] = news["내용"].astype(str)
 
     return news
+
 
 # ====================================
 # 파일 체크
@@ -194,7 +200,7 @@ if len(filtered) > 0:
 st.divider()
 
 # ====================================
-# 월별 발생
+# 월별 발생 현황
 # ====================================
 
 st.subheader("📈 월별 발생 현황")
@@ -205,7 +211,7 @@ monthly = (
     .reset_index(name="발생건수")
 )
 
-if len(monthly):
+if len(monthly) > 0:
 
     st.line_chart(
         monthly.set_index("월")
@@ -214,7 +220,7 @@ if len(monthly):
 st.divider()
 
 # ====================================
-# TOP10
+# 발생 지역 TOP10
 # ====================================
 
 st.subheader("🏖️ 발생 지역 TOP10")
@@ -230,7 +236,7 @@ st.bar_chart(top_region)
 st.divider()
 
 # ====================================
-# 위험도
+# 위험도 분석
 # ====================================
 
 st.subheader("🚨 전국 위험도")
@@ -254,8 +260,16 @@ elif danger > 20:
 else:
     level = "🟢 안전"
 
-st.metric("현재 위험도", level)
-st.write(f"위험 키워드 수 : {danger}")
+st.metric(
+    "현재 위험도",
+    level
+)
+
+st.write(
+    f"위험 키워드 수 : {danger}"
+)
+
+st.divider()
 
 # ====================================
 # 해파리 종 분석
@@ -288,7 +302,13 @@ st.divider()
 # 뉴스 검색
 # ====================================
 
-if keyword:st.text_input(...)
+st.subheader("🔍 뉴스 검색")
+
+keyword = st.text_input(
+    "지역 또는 해파리 이름 입력"
+)
+
+if keyword:
 
     result = news[
         news["내용"]
@@ -309,9 +329,13 @@ if keyword:st.text_input(...)
         result,
         use_container_width=True
     )
+
+st.divider()
+
 # ====================================
 # 최근 뉴스
 # ====================================
+
 st.subheader("📰 최근 뉴스")
 
 for i in range(
