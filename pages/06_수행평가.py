@@ -51,31 +51,53 @@ def load_observation():
 @st.cache_data
 def load_news():
 
-    try:
-        news = pd.read_csv(
-            SEA02_FILE,
-            sep="\t",
-            header=None,
-            names=["날짜", "내용"],
-            encoding="cp949",
-            engine="python"
-        )
+    rows = []
 
-    except:
+    encodings = ["cp949", "euc-kr", "utf-8"]
 
-        news = pd.read_csv(
-            SEA02_FILE,
-            sep="\t",
-            header=None,
-            names=["날짜", "내용"],
-            encoding="euc-kr",
-            engine="python"
-        )
+    for enc in encodings:
 
+        try:
+
+            with open(
+                SEA02_FILE,
+                "r",
+                encoding=enc
+            ) as f:
+
+                for line in f:
+
+                    line = line.strip()
+
+         if not line:
+                        continue
+
+                    parts = line.split("\t", 1)
+
+                    if len(parts) == 2:
+
+                        rows.append({
+                            "날짜": parts[0],
+                            "내용": parts[1]
+                        })
+
+                    else:
+
+                        rows.append({
+                            "날짜": "",
+                            "내용": line })
+
+            break
+
+        except Exception:
+            continue
+
+    news = pd.DataFrame(rows)
+
+    news["날짜"] = news["날짜"].astype(str)
     news["내용"] = news["내용"].astype(str)
 
     return news
-
 
 # ====================================
 # 파일 체크
@@ -215,7 +237,7 @@ st.divider()
 st.subheader("🚨 전국 위험도")
 
 news_text = "\n".join(
-    news["내용"]
+    news["내용"].fillna("").astype(str)
 )
 
 danger = (
@@ -223,7 +245,7 @@ danger = (
     + news_text.count("주의보")
     + news_text.count("대량출현")
     + news_text.count("대량 발생")
-    + news_text.count("쏘임사고")
+    + news_text.count("어업피해")
 )
 
 if danger > 50:
@@ -233,16 +255,8 @@ elif danger > 20:
 else:
     level = "🟢 안전"
 
-st.metric(
-    "현재 위험도",
-    level
-)
-
-st.write(
-    f"위험 키워드 수 : {danger}"
-)
-
-st.divider()
+st.metric("현재 위험도", level)
+st.write(f"위험 키워드 수 : {danger}")
 
 # ====================================
 # 해파리 종 분석
@@ -275,16 +289,12 @@ st.divider()
 # 뉴스 검색
 # ====================================
 
-st.subheader("🔍 뉴스 검색")
-
-keyword = st.text_input(
-    "지역 또는 해파리 이름"
-)
-
 if keyword:
 
     result = news[
         news["내용"]
+        .fillna("")
+        .astype(str)
         .str.contains(
             keyword,
             case=False,
@@ -300,13 +310,9 @@ if keyword:
         result,
         use_container_width=True
     )
-
-st.divider()
-
 # ====================================
 # 최근 뉴스
 # ====================================
-
 st.subheader("📰 최근 뉴스")
 
 for i in range(
@@ -314,7 +320,7 @@ for i in range(
 ):
 
     with st.expander(
-        f"{news.iloc[i]['날짜']}"
+        str(news.iloc[i]["날짜"])
     ):
 
         st.write(
